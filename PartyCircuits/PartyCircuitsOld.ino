@@ -50,10 +50,10 @@ int kNumberOfLeds = 6;
 int ledArray[] = {3, 5, 6, 9, 10, 11};
 
 //Duration that LEDs are OFF (in milliseconds)
-const int ledTimeOff = 50;
+const int ledTimeOff = 500;
 
 //Set variables for Excel commands
-bool priorLoopValue; //initialize as infinite loop
+//const int kNumberOfVariables = 6;
 int intensityRaw;
 int intensity;
 int flashSpeedRaw;
@@ -107,8 +107,7 @@ void setup() {
   pinMode(ledPin6, OUTPUT);
 
   //Initialize the serial port
-  Serial.begin(9600);
-  priorLoopValue = 1;  
+  Serial.begin(9600);  
 }
 
 // START OF MAIN LOOP --------------------------------------------------------- 
@@ -120,42 +119,20 @@ void loop()
 
   currentCommand = incomingExcelFloat;
   bool loopValue = isLoop(incomingExcelFloat);
-//  Serial.print("this is loop value");
-//  Serial.print(loopValue);
-//  Serial.println();
 
 //Check if the command sequence has changed. If so, reset loop count
   if(currentCommand != priorCommand){
-//    if(loopValue == 1){
-//      flashLeds();
-//      priorLoopValue = 1;
-//    }
-//    else if(loopValue == 0 && loopTrack < 1){
-//      flashLeds();
-//      priorLoopValue = 0;
-//    }
     loopTrack = 0;
     priorCommand = currentCommand;
   }
-
-  // If loop is true, loop forever. Else, play once and stop.
-  if(loopValue == 1){
-    for(int i = 0; i < 10000; i++){
-      flashLeds();
-      priorLoopValue = 1;
-    }
-  }
-  else if(loopValue == 0 && loopTrack < 1){
-      flashLeds();
-      delay(10);   
-      priorLoopValue = 0;
-  }
+  
+  flashLeds();
   
 }
 //-------------------------------------------------------------------
 // Party Circuits Functions
 //-------------------------------------------------------------------
-// Check if pattern is repeated  (Excel command 0 = infinite loop, 1 = play once
+// Check if pattern is repeated 
 bool isLoop(int loopCommand){
   if(loopCommand == 1){
     return true;
@@ -209,10 +186,6 @@ void flashLeds(){
        led5 = getValue(incomingSerialData[i+1],';',6).toInt();
        led6 = getValue(incomingSerialData[i+1],';',7).toInt();
 
-     //  Serial.print("This is the data");
-       //Serial.print(inputString);
-       //Serial.println();
-
        //Determine intensity
        intensity = ledIntensity(intensityRaw);
        flashSpeed = ledSpeed(flashSpeedRaw);
@@ -260,7 +233,7 @@ void flashLeds(){
           analogWrite(ledArray[i], LOW);
         } 
        
-       delay(ledTimeOff); //same off duration for all sequences
+       delay(10); //same off duration for all sequences
      }
 
   // Keep track of number of times command sequence is repeated
@@ -374,9 +347,14 @@ void GetSerialData()
     if (inChar == '\n') {                 // If we get a newline... 
       stringComplete = true;              // Then we have a complete string
     }
-  //  else(delay(10));
+    else(delay(10));
    }
-
+//  Serial.println(inputString);
+  Serial.print("YES");
+  Serial.print(inChar); 
+  Serial.println("omgplzwerk"); 
+  Serial.println("Getting serial data");
+  Serial.println(stringComplete);
 }
 
 // Takes the comma delimited string from Data Streamer
