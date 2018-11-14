@@ -53,9 +53,10 @@ int ledArray[] = {3, 5, 6, 9, 10, 11};
 const int ledTimeOff = 500;
 
 //Set variables for Excel commands
-const int kNumberOfVariables = 6;
+//const int kNumberOfVariables = 6;
 int intensityRaw;
 int intensity;
+int flashSpeedRaw;
 int flashSpeed;
 //   LED status (0 = off, 1 = on)
 int led1 = 0;
@@ -69,9 +70,9 @@ int dataArray[6] = {led1, led2, led3, led4, led5, led6};
 // Variables for LED intensity and Flash Speed. Can adjust as desired.
 int ledBright = 255;
 int ledDim = 100;
-int fastSpeed = 1000;
-int medSpeed = 2000;
-int slowSpeed = 3000;
+int fastSpeed = 250;
+int medSpeed = 500;
+int slowSpeed = 1000;
 
 // Excel variables ------------------------------------------------------------
 int commandNumber;
@@ -176,7 +177,7 @@ void flashLeds(){
    for(int i = 0; i < kNumberOfChannelsFromExcel; i++)
     {
        intensityRaw= getValue(incomingSerialData[i+1], ';', 0).toInt();
-       flashSpeed = 100*getValue(incomingSerialData[i+1], ';', 1).toInt();
+       flashSpeedRaw = getValue(incomingSerialData[i+1], ';', 1).toInt();
 
        led1 = getValue(incomingSerialData[i+1],';',2).toInt();
        led2 = getValue(incomingSerialData[i+1],';',3).toInt();
@@ -187,6 +188,7 @@ void flashLeds(){
 
        //Determine intensity
        intensity = ledIntensity(intensityRaw);
+       flashSpeed = ledSpeed(flashSpeedRaw);
 
       //Update LED data array to turn on/off approprirate LEDs   
        dataArray[0] = led1;
@@ -239,8 +241,6 @@ void flashLeds(){
 }
 
 
-
-
 //Function for specialized string search: go through a string and pull out characters
 String getValue(String dataString, char separator, int index)
 {                                           // basic searching algorithm
@@ -276,7 +276,6 @@ void ParseSerialData()
     
     inputString = ""; // reset inputString
     stringComplete = false; // reset stringComplete flag
-    Serial.println("Parse Serial Data");
   }
 
 }
