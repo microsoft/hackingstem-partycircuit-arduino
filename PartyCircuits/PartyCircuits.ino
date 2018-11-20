@@ -36,6 +36,10 @@
 ----------------------------------------------------------------------------
 */ 
 
+
+// 1,1;2;1;0;0;0;1;0,1;2;0;1;0;1;0;0,3;3;0;0;1;0;0;0,3;1;1;1;0;0;1;0,1;1;1;0;1;1;0;0,1;1;0;1;1;0;1;0,1;1;0;1;0;0;0;0,1;1;1;1;1;1;0;0
+
+#include <String.h>
 // Program variables ----------------------------------------------------------
 //LED Pins (max. of 6)
 const int ledPin1 = 3;
@@ -74,6 +78,18 @@ int fastSpeed = 250;
 int medSpeed = 500;
 int slowSpeed = 1000;
 
+// Bitwise operator varilables
+int bitwiseArray[8][2] =
+{{0x300, 8},
+{0xC0, 6},
+{0x20, 5},
+{0x10, 4},
+{0x8, 3},
+{0x4, 2},
+{0x2, 1},
+{0x1, 0}};
+int ledHexArray [8];
+
 // Excel variables ------------------------------------------------------------
 int commandNumber;
 int loopTrack = 0; //variable to send to Excel to keep track of loop iterations
@@ -87,6 +103,8 @@ float incomingExcelFloat = 0; // Command Trigger
 // Serial data variables ------------------------------------------------------
 // IMPORTANT: This must be equal to number of channels set in Data Streamer
 const byte kNumberOfChannelsFromExcel = 10; //Incoming Serial Data Array
+
+String ledSettingArray[kNumberOfChannelsFromExcel][10];
 
 String incomingSerialData[kNumberOfChannelsFromExcel];
 
@@ -116,7 +134,28 @@ void loop()
 {
   // Read Excel variables from serial port (Data Streamer)
   processIncomingSerial();
-  delay(10);
+  delay(1000);
+  
+    // int val = parseHexValues();
+    // Serial.println(val, BIN);
+ 
+  // int hexByte = incomingSerialData[0].toInt();
+  // Serial.println(hexByte, BIN);
+  parseHexValues();
+  for (int i = 0; i < 8; i++){
+    Serial.println(ledHexArray[i], BIN);
+  }
+//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
+//parseLedSettings();
+// for (int i = 0; i < kNumberOfChannelsFromExcel; i++)
+// {
+//   for (int j = 0; j < 10 ; j++){
+//     Serial.print(ledSettingArray[i][j]);
+//     Serial.print(",");
+//   }
+//   Serial.println();
+// }
+
 
   currentCommand = incomingExcelFloat;
   bool loopValue = isLoop(incomingExcelFloat);
@@ -193,7 +232,6 @@ int ledSpeed(int flashSpeed){
   }
 }
 
-
 // Excel-driven LED Flashing Function
 void flashLeds(){
     // Separate each column of incomingSerialData into separate commands
@@ -266,6 +304,60 @@ void flashLeds(){
   // Keep track of number of times command sequence is repeated
   loopTrack++;
 }
+
+void parseHexValues()
+{
+    char stringCopy[incomingSerialData[1].length()+1];
+    incomingSerialData[1].toCharArray(stringCopy, incomingSerialData[1].length()+1);
+    int hex = strtol(stringCopy, NULL, 16);
+    for (int i = 0; i < 8; i++){
+      int val = hex & bitwiseArray[i][0];
+      val = val >> bitwiseArray[i][1];
+      ledHexArray[i] = val;
+    }
+}
+void parseLedSettings()
+{
+  for (int i = 0; i < kNumberOfChannelsFromExcel; i++){
+    char stringCopy[incomingSerialData[i+1].length()+1];
+    incomingSerialData[i+1].toCharArray(stringCopy, incomingSerialData[i+1].length()+1);
+    char *token = strtok(stringCopy, ";");
+    int j = 0;
+    while (token != NULL){
+      ledSettingArray[i][j] = token;
+      token = strtok(NULL, ";");
+      j++;
+    }
+  }
+}
+
+// void parseLedSettings()
+// {
+//   for (int i = 0; i < kNumberOfChannelsFromExcel; i++){
+//     for (int j = 0; j < 8; i++){
+//       ledSettingArray[i][j] = seperateData(incomingSerialData[i+1], ';', j).toInt();
+//     }
+//   }
+// }
+
+// int seperateData(String inputData, char seperater; int index)
+// {
+//   //int charIndex = 0;
+//   arrayIndex = 0
+//   //int maxIndex = inputData.length();
+//   String element;
+//   if (charIndex == seperater && index < arrayIndex){
+//     arrayIndex++; //Increment the counter to next element in the array
+//     charIndex++; //Skip the seperater
+//   } 
+//   else if (charIndex != seperater && charIndex < maxIndex){
+//     element += inputData[charIndex];
+//     charIndex++
+//   } 
+//   else {
+//     return element.toInt();
+//   }
+// }
 
 
 //Function for specialized string search: go through a string and pull out characters
@@ -358,26 +450,22 @@ void processIncomingSerial()
 
 // Gathers bits from serial port to build inputString
 void getSerialData2(){
-//  Serial.setTimeout(50);
   if(Serial.available()){
-    inputString = Serial.readStringUntil("\n");
+    inputString = Serial.readStringUntil('\n');
     stringComplete =true;
   }
 }
 
-void GetSerialData()
-{
-  char inChar;
-  while (Serial.available()) {
-    inChar = (char)Serial.read();    // Read new character
-    inputString += inChar;                // Add it to input string
-    if (inChar == '\n') {                 // If we get a newline... 
-      stringComplete = true;              // Then we have a complete string
-    }
-  //  else(delay(10));
-   }
-
-}
+// void getSerialData()
+// {
+//   while (Serial.available()) {
+//     char inChar = (char)Serial.read();    // Read new character
+//     inputString += inChar;                // Add it to input string
+//     if (inChar == '\n') {                 // If we get a newline... 
+//       stringComplete = true;              // Then we have a complete string
+//     }
+//   }
+// }
 
 // Takes the comma delimited string from Data Streamer
 // and splits the fields into an indexed array
