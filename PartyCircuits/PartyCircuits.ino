@@ -36,8 +36,9 @@
 ----------------------------------------------------------------------------
 */ 
 
+// Sample Command for Testing
+// 0,3EC,2C4,364,154,374,248,3A8,2BC
 
-// 1,1;2;1;0;0;0;1;0,1;2;0;1;0;1;0;0,3;3;0;0;1;0;0;0,3;1;1;1;0;0;1;0,1;1;1;0;1;1;0;0,1;1;0;1;1;0;1;0,1;1;0;1;0;0;0;0,1;1;1;1;1;1;0;0
 
 #include <String.h>
 // Program variables ----------------------------------------------------------
@@ -134,66 +135,76 @@ void loop()
 {
   // Read Excel variables from serial port (Data Streamer)
   processIncomingSerial();
-  delay(1000);
+  delay(1000); // This is just for debugging
   
-    // int val = parseHexValues();
-    // Serial.println(val, BIN);
- 
-  // int hexByte = incomingSerialData[0].toInt();
-  // Serial.println(hexByte, BIN);
-  parseHexValues();
-  for (int i = 0; i < 8; i++){
-    Serial.println(ledHexArray[i], BIN);
+  for (int i = 0; i < 8; i++)
+  {
+    parseHexValues(i+1);
+    flashLeds(i);
+    processOutgoingSerial();
+    // for (int j = 0; j < 8; j++){
+    // //THis is for debugging
+    // Serial.print(ledHexArray[j], DEC);
+    // Serial.print(",");
+    // }
+    // Serial.println();
   }
-//!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!//
-//parseLedSettings();
-// for (int i = 0; i < kNumberOfChannelsFromExcel; i++)
-// {
-//   for (int j = 0; j < 10 ; j++){
-//     Serial.print(ledSettingArray[i][j]);
-//     Serial.print(",");
+
+  // for (int i = 0; i < 8; i++){
+  //   //THis is for debugging
+  //   Serial.println(ledHexArray[i], BIN);
+  // }
+
+//   currentCommand = incomingExcelFloat;
+//   bool loopValue = isLoop(incomingExcelFloat);
+// //  Serial.print("this is loop value");
+// //  Serial.print(loopValue);
+// //  Serial.println();
+
+// //Check if the command sequence has changed. If so, reset loop count
+//   if(currentCommand != priorCommand){
+// //    if(loopValue == 1){
+// //      flashLeds();
+// //      priorLoopValue = 1;
+// //    }
+// //    else if(loopValue == 0 && loopTrack < 1){
+// //      flashLeds();
+// //      priorLoopValue = 0;
+// //    }
+//     loopTrack = 0;
+//     priorCommand = currentCommand;
 //   }
-//   Serial.println();
-// }
 
-
-  currentCommand = incomingExcelFloat;
-  bool loopValue = isLoop(incomingExcelFloat);
-//  Serial.print("this is loop value");
-//  Serial.print(loopValue);
-//  Serial.println();
-
-//Check if the command sequence has changed. If so, reset loop count
-  if(currentCommand != priorCommand){
-//    if(loopValue == 1){
-//      flashLeds();
-//      priorLoopValue = 1;
-//    }
-//    else if(loopValue == 0 && loopTrack < 1){
-//      flashLeds();
-//      priorLoopValue = 0;
-//    }
-    loopTrack = 0;
-    priorCommand = currentCommand;
-  }
-
-  // If loop is true, loop forever. Else, play once and stop.
-  if(loopValue == 1){
-    for(int i = 0; i < 10000; i++){
-      flashLeds();
-      priorLoopValue = 1;
-    }
-  }
-  else if(loopValue == 0 && loopTrack < 1){
-      flashLeds();
-      delay(10);   
-      priorLoopValue = 0;
-  }
+//   // If loop is true, loop forever. Else, play once and stop.
+//   if(loopValue == 1){
+//     for(int i = 0; i < 10000; i++){
+//       flashLeds();
+//       priorLoopValue = 1;
+//     }
+//   }
+//   else if(loopValue == 0 && loopTrack < 1){
+//       flashLeds();
+//       delay(10);   
+//       priorLoopValue = 0;
+//   }
   
 }
 //-------------------------------------------------------------------
 // Party Circuits Functions
 //-------------------------------------------------------------------
+
+void parseHexValues(int index)
+{
+    char stringCopy[incomingSerialData[index].length()+1];   // Array to chars 
+    incomingSerialData[index].toCharArray(stringCopy, incomingSerialData[index].length()+1); // Convert String object to char[]
+    int hex = strtol(stringCopy, NULL, 16); // string to long converts str to string w/ any base
+    for (int i = 0; i < 8; i++){
+      int val = hex & bitwiseArray[i][0]; // filter out all bits not relevant for command
+      val = val >> bitwiseArray[i][1]; // shift all bits to get relevant command
+      ledHexArray[i] = val;
+    }
+}
+
 // Check if pattern is repeated  (Excel command 0 = infinite loop, 1 = play once
 bool isLoop(int loopCommand){
   if(loopCommand == 1){
@@ -233,19 +244,18 @@ int ledSpeed(int flashSpeed){
 }
 
 // Excel-driven LED Flashing Function
-void flashLeds(){
+void flashLeds(int commandNum){
     // Separate each column of incomingSerialData into separate commands
-   for(int i = 0; i < kNumberOfChannelsFromExcel; i++)
-    {
-       intensityRaw= getValue(incomingSerialData[i+1], ';', 0).toInt();
-       flashSpeedRaw = getValue(incomingSerialData[i+1], ';', 1).toInt();
 
-       led1 = getValue(incomingSerialData[i+1],';',2).toInt();
-       led2 = getValue(incomingSerialData[i+1],';',3).toInt();
-       led3 = getValue(incomingSerialData[i+1],';',4).toInt();
-       led4 = getValue(incomingSerialData[i+1],';',5).toInt();
-       led5 = getValue(incomingSerialData[i+1],';',6).toInt();
-       led6 = getValue(incomingSerialData[i+1],';',7).toInt();
+       intensityRaw= ledHexArray[0];
+       flashSpeedRaw = ledHexArray[1];
+
+       led1 = ledHexArray[2];
+       led2 = ledHexArray[3];
+       led3 = ledHexArray[4];
+       led4 = ledHexArray[5];
+       led5 = ledHexArray[6];
+       led6 = ledHexArray[7];
 
      //  Serial.print("This is the data");
        //Serial.print(inputString);
@@ -265,23 +275,23 @@ void flashLeds(){
       
       // Process and send data to Excel via serial port (Data Streamer)
       // Sending: Loop Number, Command Number (Excel Column), Four LED states  
-       commandNumber = i;
-       Serial.print(loopTrack);
-       Serial.print(kDelimiter);
-       Serial.print(commandNumber);
-       Serial.print(kDelimiter);
-       Serial.print(dataArray[0]);
-       Serial.print(kDelimiter);
-       Serial.print(dataArray[1]);
-       Serial.print(kDelimiter);
-       Serial.print(dataArray[2]);
-       Serial.print(kDelimiter);
-       Serial.print(dataArray[3]);
-       Serial.print(kDelimiter);
-       Serial.print(dataArray[4]);
-       Serial.print(kDelimiter);
-       Serial.print(dataArray[5]);
-       Serial.println(); // Add final line ending character only once
+       commandNumber = commandNum;
+      //  Serial.print(loopTrack);
+      //  Serial.print(kDelimiter);
+      //  Serial.print(commandNumber);
+      //  Serial.print(kDelimiter);
+      //  Serial.print(dataArray[0]);
+      //  Serial.print(kDelimiter);
+      //  Serial.print(dataArray[1]);
+      //  Serial.print(kDelimiter);
+      //  Serial.print(dataArray[2]);
+      //  Serial.print(kDelimiter);
+      //  Serial.print(dataArray[3]);
+      //  Serial.print(kDelimiter);
+      //  Serial.print(dataArray[4]);
+      //  Serial.print(kDelimiter);
+      //  Serial.print(dataArray[5]);
+      //  Serial.println(); // Add final line ending character only once
       
        // Flash appropriate LEDs at given intensity       
        for(int i = 0; i < kNumberOfLeds; i++){
@@ -299,33 +309,22 @@ void flashLeds(){
         } 
        
        delay(ledTimeOff); //same off duration for all sequences
-     }
+     
 
   // Keep track of number of times command sequence is repeated
   loopTrack++;
 }
 
-void parseHexValues()
-{
-    char stringCopy[incomingSerialData[1].length()+1];
-    incomingSerialData[1].toCharArray(stringCopy, incomingSerialData[1].length()+1);
-    int hex = strtol(stringCopy, NULL, 16);
-    for (int i = 0; i < 8; i++){
-      int val = hex & bitwiseArray[i][0];
-      val = val >> bitwiseArray[i][1];
-      ledHexArray[i] = val;
-    }
-}
 void parseLedSettings()
 {
   for (int i = 0; i < kNumberOfChannelsFromExcel; i++){
     char stringCopy[incomingSerialData[i+1].length()+1];
     incomingSerialData[i+1].toCharArray(stringCopy, incomingSerialData[i+1].length()+1);
-    char *token = strtok(stringCopy, ";");
+    char *token = strtok(stringCopy, ",");
     int j = 0;
     while (token != NULL){
       ledSettingArray[i][j] = token;
-      token = strtok(NULL, ";");
+      token = strtok(NULL, ",");
       j++;
     }
   }
@@ -414,13 +413,13 @@ void sendDataToSerial()
   //LED status (on/off)
   Serial.print(commandNumber);
   Serial.print(kDelimiter);
-  Serial.print(dataArray[0]);
+  Serial.print(ledHexArray[2]);
   Serial.print(kDelimiter);
-  Serial.print(dataArray[1]);
+  Serial.print(ledHexArray[3]);
   Serial.print(kDelimiter);
-  Serial.print(dataArray[2]);
+  Serial.print(ledHexArray[4]);
   Serial.print(kDelimiter);
-  Serial.print(dataArray[3]);
+  Serial.print(ledHexArray[5]);
   Serial.print(kDelimiter);
     
   Serial.println(); // Add final line ending character only once
@@ -444,28 +443,17 @@ void processOutgoingSerial()
 // INCOMING SERIAL DATA PROCESSING CODE----------------------------------------
 void processIncomingSerial()
 {
-  getSerialData2();
+  getSerialData();
   ParseSerialData();
 }
 
 // Gathers bits from serial port to build inputString
-void getSerialData2(){
+void getSerialData(){
   if(Serial.available()){
     inputString = Serial.readStringUntil('\n');
     stringComplete =true;
   }
 }
-
-// void getSerialData()
-// {
-//   while (Serial.available()) {
-//     char inChar = (char)Serial.read();    // Read new character
-//     inputString += inChar;                // Add it to input string
-//     if (inChar == '\n') {                 // If we get a newline... 
-//       stringComplete = true;              // Then we have a complete string
-//     }
-//   }
-// }
 
 // Takes the comma delimited string from Data Streamer
 // and splits the fields into an indexed array
