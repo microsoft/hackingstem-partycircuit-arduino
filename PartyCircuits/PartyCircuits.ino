@@ -8,7 +8,7 @@
 //  Party Circuits workbook. Commands (intensity, flash speed, and which lights
 //  are on) are send as Hex numbers in 9-element array. 
 //  To test commands in the Arduino Serial Monitor, use this example:
-//        0,3EC,2C4,364,154,374,248,3A8,2BC
+//        0,0,3EC,2C4,364,154,374,248,3A8,2BC
 //  Pins:
 //  Digital Pin 3 -- LED 1
 //  Digital Pin 5 -- LED 2
@@ -42,8 +42,8 @@ const int kLedTimeOff = 50;
 
 // Variables for LED intensity and Flash Speed. Can adjust as desired.
 const int kLedBright = 255;
-const int kLedMed = 200;
-const int kLedDim = 100;
+const int kLedMed = 100;
+const int kLedDim = 50;
 const int kFastSpeed = 250;
 const int kMedSpeed = 500;
 const int kSlowSpeed = 1000;
@@ -78,11 +78,12 @@ float currentCommand = 0; //variable to store current command
 float priorCommand; //variable to store prior command
 
 // Command Loop Variable
-bool isPatternLooped = 0; 
+bool isPatternLooped = 0;
+bool newString = false; 
           
 // Serial data variables ------------------------------------------------------
 // IMPORTANT: This must be equal to number of channels set in Data Streamer
-const byte kNumberOfChannelsFromExcel = 9; //Incoming Serial Data Array
+const byte kNumberOfChannelsFromExcel = 10; //Incoming Serial Data Array
 const int kNumberOfCommands = 8; //Incoming Command Array
 
 String ledSettingArray[kNumberOfChannelsFromExcel][10];
@@ -113,12 +114,33 @@ void loop()
 {
   // Read Excel variables from serial port (Data Streamer)
   processIncomingSerial();
-  
-  for (int i = 0; i < kNumberOfChannelsFromExcel; i++)
-  {
-    parseHexValues(i+1);
-    processOutgoingSerial();
-    flashLeds(i);
+
+  if (isPatternLooped == 1){
+    newString = false;
+    loopTrack = 0;
+    for (int i = 0; i < kNumberOfChannelsFromExcel; i++)
+    {
+      processIncomingSerial();
+      if (incomingSerialData[0] == "#pause" || newString == true){
+        break;
+      }
+      parseHexValues(i+1);
+      processOutgoingSerial();
+      flashLeds(i);
+    }
+  } else if (newString == true){
+      newString = false;
+      loopTrack = 0;
+        for (int i = 0; i < kNumberOfChannelsFromExcel; i++)
+          {
+            processIncomingSerial();
+            if (incomingSerialData[0] == "#pause" || newString == true){
+             break;
+            }
+            parseHexValues(i+1);
+            processOutgoingSerial();
+            flashLeds(i);
+          }
   }
 }
 
@@ -223,7 +245,7 @@ void ParseSerialData()
 
     // Set variables based on array index referring to columns:
     // Data Out column A5 = 0, B5 = 1, C5 = 2, etc.
-    isPatternLooped = incomingSerialData[0].toFloat(); // First cell in Data Out Sheet 
+    isPatternLooped = incomingSerialData[1].toInt(); // First cell in Data Out Sheet 
        
     inputString = ""; // reset inputString
     stringComplete = false; // reset stringComplete flag
@@ -234,29 +256,8 @@ void ParseSerialData()
 void sendDataToSerial()
 {
   // Send data out separated by a comma (kDelimiter)
-  //Loop track number
-  Serial.print(loopTrack);
-  Serial.print(kDelimiter);
-  
-  // Example test for incoming Excel variables
-  Serial.print(isPatternLooped);
-  Serial.print(kDelimiter);
 
-  //LED status (on/off)
-  Serial.print(commandNumber);
-  Serial.print(kDelimiter);
-  Serial.print(ledHexArray[2]);
-  Serial.print(kDelimiter);
-  Serial.print(ledHexArray[3]);
-  Serial.print(kDelimiter);
-  Serial.print(ledHexArray[4]);
-  Serial.print(kDelimiter);
-  Serial.print(ledHexArray[5]);
-  Serial.print(kDelimiter);
-  Serial.print(ledHexArray[6]);
-  Serial.print(kDelimiter); 
-  Serial.print(ledHexArray[7]);
-    
+  Serial.print(loopTrack);    //Prints the current active column 
   Serial.println(); // Add final line ending character only once
 }
 
@@ -287,6 +288,7 @@ void getSerialData(){
   if(Serial.available()){
     inputString = Serial.readStringUntil('\n');
     stringComplete =true;
+    newString = true;
   }
 }
 
