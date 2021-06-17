@@ -1,6 +1,7 @@
 /* -------------------__ Hacking STEM PartyCircuits Arduino __-----------------===//
 //   For use with the Party Circuits lesson plan 
 //   available from Microsoft Education Workshop at
+//   https://www.microsoft.com/en-us/education/education-workshop/party-lights.aspx
 //   http://aka.ms/hackingSTEM 
 //
 //  Overview:
